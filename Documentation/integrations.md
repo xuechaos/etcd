@@ -1,8 +1,10 @@
-# Libraries and tools
+---
+title: Libraries and tools
+---
 
 **Tools**
 
-- [etcdctl](https://github.com/coreos/etcd/tree/master/etcdctl) - A command line client for etcd
+- [etcdctl](https://github.com/etcd-io/etcd/tree/master/etcdctl) - A command line client for etcd
 - [etcd-backup](https://github.com/fanhattan/etcd-backup) - A powerful command line utility for dumping/restoring etcd - Supports v2
 - [etcd-dump](https://npmjs.org/package/etcd-dump) - Command line utility for dumping/restoring etcd.
 - [etcd-fs](https://github.com/xetorthio/etcd-fs) - FUSE filesystem for etcd
@@ -16,6 +18,8 @@
 - [etcdsh](https://github.com/kamilhark/etcdsh) - A command line client with support of command history and tab completion. Supports v2
 - [etcdloadtest](https://github.com/sinsharat/etcdloadtest) - A command line load test client for etcd version 3.0 and above.
 - [lucas](https://github.com/ringtail/lucas) - A web-based key-value viewer for kubernetes etcd3.0+ cluster.
+- [etcd-manager](https://etcdmanager.io) - A modern, efficient, multi-platform and free ETCD 3.x GUI & client tool. Available for Windows, Linux and Mac.
+- [etcd-backup-restore](https://github.com/gardener/etcd-backup-restore) -  Utility to periodic and incrementally backup and restore the etcd. 
 
 **Go libraries**
 
@@ -26,7 +30,7 @@
 
 **Java libraries**
 
-- [coreos/jetcd](https://github.com/coreos/jetcd) - Supports v3
+- [coreos/jetcd](https://github.com/etcd-io/jetcd) - Supports v3
 - [boonproject/etcd](https://github.com/boonproject/boon/blob/master/etcd/README.md) - Supports v2, Async/Sync and waits
 - [justinsb/jetcd](https://github.com/justinsb/jetcd)
 - [diwakergupta/jetcd](https://github.com/diwakergupta/jetcd) - Supports v2
@@ -54,6 +58,7 @@
 - [txaio-etcd](https://github.com/crossbario/txaio-etcd) - Asynchronous etcd v3-only client library for Twisted (today) and asyncio (future)
 - [dims/etcd3-gateway](https://github.com/dims/etcd3-gateway) - etcd v3 API library using the HTTP grpc gateway
 - [aioetcd3](https://github.com/gaopeiliang/aioetcd3) - (Python 3.6+) etcd v3 API for asyncio
+- [Revolution1/etcd3-py](https://github.com/Revolution1/etcd3-py) - (python2.7 and python3.5+) Python client for etcd v3, using gRPC-JSON-Gateway
 
 **Node libraries**
 
@@ -89,7 +94,8 @@
 
 **Erlang libraries**
 
-- [marshall-lee/etcd.erl](https://github.com/marshall-lee/etcd.erl)
+- [marshall-lee/etcd.erl](https://github.com/marshall-lee/etcd.erl) - Supports v2
+- [zhongwencool/eetcd](https://github.com/zhongwencool/eetcd) - Supports v3+ (GRPC only)
 
 **.Net Libraries**
 

@@ -27,8 +27,6 @@ import (
 	"go.etcd.io/etcd/etcdserver/api/v3rpc/rpctypes"
 	"go.etcd.io/etcd/integration"
 	"go.etcd.io/etcd/pkg/testutil"
-
-	"google.golang.org/grpc"
 )
 
 func TestLeaseNotFoundError(t *testing.T) {
@@ -86,7 +84,7 @@ func TestLeaseRevoke(t *testing.T) {
 		t.Errorf("failed to create lease %v", err)
 	}
 
-	_, err = lapi.Revoke(context.Background(), clientv3.LeaseID(resp.ID))
+	_, err = lapi.Revoke(context.Background(), resp.ID)
 	if err != nil {
 		t.Errorf("failed to revoke lease %v", err)
 	}
@@ -291,21 +289,19 @@ func TestLeaseGrantErrConnClosed(t *testing.T) {
 
 	cli := clus.Client(0)
 	clus.TakeClient(0)
+	if err := cli.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	donec := make(chan struct{})
 	go func() {
 		defer close(donec)
 		_, err := cli.Grant(context.TODO(), 5)
 		if !clientv3.IsConnCanceled(err) {
-			// grpc.ErrClientConnClosing if grpc-go balancer calls 'Get' after client.Close.
 			// context.Canceled if grpc-go balancer calls 'Get' with an inflight client.Close.
-			t.Fatalf("expected %v, %v or server unavailable, got %v", err != context.Canceled, grpc.ErrClientConnClosing, err)
+			t.Errorf("expected %v, or server unavailable, got %v", context.Canceled, err)
 		}
 	}()
-
-	if err := cli.Close(); err != nil {
-		t.Fatal(err)
-	}
 
 	select {
 	case <-time.After(integration.RequestWaitTimeout):
@@ -373,7 +369,7 @@ func TestLeaseGrantNewAfterClose(t *testing.T) {
 	go func() {
 		_, err := cli.Grant(context.TODO(), 5)
 		if !clientv3.IsConnCanceled(err) {
-			t.Fatalf("expected %v, %v or server unavailable, got %v", err != context.Canceled, grpc.ErrClientConnClosing, err)
+			t.Errorf("expected %v or server unavailable, got %v", context.Canceled, err)
 		}
 		close(donec)
 	}()
@@ -406,7 +402,7 @@ func TestLeaseRevokeNewAfterClose(t *testing.T) {
 	go func() {
 		_, err := cli.Revoke(context.TODO(), leaseID)
 		if !clientv3.IsConnCanceled(err) {
-			t.Fatalf("expected %v, %v or server unavailable, got %v", err != context.Canceled, grpc.ErrClientConnClosing, err)
+			t.Fatalf("expected %v or server unavailable, got %v", context.Canceled, err)
 		}
 		close(donec)
 	}()
@@ -768,7 +764,7 @@ func TestV3LeaseFailureOverlap(t *testing.T) {
 				if err == nil || err == rpctypes.ErrTimeoutDueToConnectionLost {
 					return
 				}
-				t.Fatal(err)
+				t.Error(err)
 			}()
 		}
 	}

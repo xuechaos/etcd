@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -161,6 +162,31 @@ func TestSnapshotFilePermissions(t *testing.T) {
 	}
 }
 
+// TestCorruptedBackupFileCheck tests if we can correctly identify a corrupted backup file.
+func TestCorruptedBackupFileCheck(t *testing.T) {
+	dbPath := "testdata/corrupted_backup.db"
+	if _, err := os.Stat(dbPath); err != nil {
+		t.Fatalf("test file [%s] does not exist: %v", dbPath, err)
+	}
+
+	sp := NewV3(zap.NewExample())
+	_, err := sp.Status(dbPath)
+	expectedErrKeywords := "snapshot file integrity check failed"
+	/* example error message:
+	snapshot file integrity check failed. 2 errors found.
+	page 3: already freed
+	page 4: unreachable unfreed
+	*/
+	if err == nil {
+		t.Error("expected error due to corrupted snapshot file, got no error")
+	}
+	if !strings.Contains(err.Error(), expectedErrKeywords) {
+		t.Errorf("expected error message to contain the following keywords:\n%s\n"+
+			"actual error message:\n%s",
+			expectedErrKeywords, err.Error())
+	}
+}
+
 type kv struct {
 	k, v string
 }
@@ -269,7 +295,7 @@ func restoreCluster(t *testing.T, clusterN int, dbPath string) (
 		go func(idx int) {
 			srv, err := embed.StartEtcd(cfgs[idx])
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 
 			<-srv.Server.ReadyNotify()

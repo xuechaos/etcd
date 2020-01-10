@@ -31,6 +31,19 @@ import (
 func newBackend(cfg ServerConfig) backend.Backend {
 	bcfg := backend.DefaultBackendConfig()
 	bcfg.Path = cfg.backendPath()
+	if cfg.BackendBatchLimit != 0 {
+		bcfg.BatchLimit = cfg.BackendBatchLimit
+		if cfg.Logger != nil {
+			cfg.Logger.Info("setting backend batch limit", zap.Int("batch limit", cfg.BackendBatchLimit))
+		}
+	}
+	if cfg.BackendBatchInterval != 0 {
+		bcfg.BatchInterval = cfg.BackendBatchInterval
+		if cfg.Logger != nil {
+			cfg.Logger.Info("setting backend batch interval", zap.Duration("batch interval", cfg.BackendBatchInterval))
+		}
+	}
+	bcfg.BackendFreelistType = cfg.BackendFreelistType
 	bcfg.Logger = cfg.Logger
 	if cfg.QuotaBackendBytes > 0 && cfg.QuotaBackendBytes != DefaultQuotaBytes {
 		// permit 10% excess over quota for disarm
@@ -89,7 +102,7 @@ func openBackend(cfg ServerConfig) backend.Backend {
 // case, replace the db with the snapshot db sent by the leader.
 func recoverSnapshotBackend(cfg ServerConfig, oldbe backend.Backend, snapshot raftpb.Snapshot) (backend.Backend, error) {
 	var cIndex consistentIndex
-	kv := mvcc.New(cfg.Logger, oldbe, &lease.FakeLessor{}, &cIndex)
+	kv := mvcc.New(cfg.Logger, oldbe, &lease.FakeLessor{}, &cIndex, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
 	defer kv.Close()
 	if snapshot.Metadata.Index <= kv.ConsistentIndex() {
 		return oldbe, nil

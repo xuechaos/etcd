@@ -60,7 +60,7 @@ func TestV3MaintenanceDefragmentInflightRange(t *testing.T) {
 // TestV3KVInflightRangeRequests ensures that inflight requests
 // (sent before server shutdown) are gracefully handled by server-side.
 // They are either finished or canceled, but never crash the backend.
-// See https://go.etcd.io/etcd/issues/7322 for more detail.
+// See https://github.com/etcd-io/etcd/issues/7322 for more detail.
 func TestV3KVInflightRangeRequests(t *testing.T) {
 	defer testutil.AfterTest(t)
 	clus := NewClusterV3(t, &ClusterConfig{Size: 1})
@@ -85,8 +85,8 @@ func TestV3KVInflightRangeRequests(t *testing.T) {
 			if err != nil {
 				errCode := status.Convert(err).Code()
 				errDesc := rpctypes.ErrorDesc(err)
-				if err != nil && !(errDesc == context.Canceled.Error() || errCode == codes.Unavailable) {
-					t.Fatalf("inflight request should be canceled with '%v' or code Unavailable, got '%v' with code '%s'", context.Canceled.Error(), errDesc, errCode)
+				if err != nil && !(errDesc == context.Canceled.Error() || errCode == codes.Canceled || errCode == codes.Unavailable) {
+					t.Errorf("inflight request should be canceled with '%v' or code Canceled or Unavailable, got '%v' with code '%s'", context.Canceled.Error(), errDesc, errCode)
 				}
 			}
 		}()

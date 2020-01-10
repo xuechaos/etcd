@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"strings"
 
+	"go.etcd.io/etcd/clientv3/credentials"
 	"go.etcd.io/etcd/etcdserver"
 	"go.etcd.io/etcd/etcdserver/api/v3client"
 	"go.etcd.io/etcd/etcdserver/api/v3election"
@@ -43,7 +44,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 type serveCtx struct {
@@ -118,9 +118,11 @@ func (sctx *serveCtx) serve(
 		go func() { errHandler(gs.Serve(grpcl)) }()
 
 		var gwmux *gw.ServeMux
-		gwmux, err = sctx.registerGateway([]grpc.DialOption{grpc.WithInsecure()})
-		if err != nil {
-			return err
+		if s.Cfg.EnableGRPCGateway {
+			gwmux, err = sctx.registerGateway([]grpc.DialOption{grpc.WithInsecure()})
+			if err != nil {
+				return err
+			}
 		}
 
 		httpmux := sctx.createMux(gwmux, handler)
@@ -156,15 +158,17 @@ func (sctx *serveCtx) serve(
 		}
 		handler = grpcHandlerFunc(gs, handler)
 
-		dtls := tlscfg.Clone()
-		// trust local server
-		dtls.InsecureSkipVerify = true
-		creds := credentials.NewTLS(dtls)
-		opts := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
 		var gwmux *gw.ServeMux
-		gwmux, err = sctx.registerGateway(opts)
-		if err != nil {
-			return err
+		if s.Cfg.EnableGRPCGateway {
+			dtls := tlscfg.Clone()
+			// trust local server
+			dtls.InsecureSkipVerify = true
+			bundle := credentials.NewBundle(credentials.Config{TLSConfig: dtls})
+			opts := []grpc.DialOption{grpc.WithTransportCredentials(bundle.TransportCredentials())}
+			gwmux, err = sctx.registerGateway(opts)
+			if err != nil {
+				return err
+			}
 		}
 
 		var tlsl net.Listener
@@ -185,7 +189,7 @@ func (sctx *serveCtx) serve(
 		sctx.serversC <- &servers{secure: true, grpc: gs, http: srv}
 		if sctx.lg != nil {
 			sctx.lg.Info(
-				"serving client traffic insecurely",
+				"serving client traffic securely",
 				zap.String("address", sctx.l.Addr().String()),
 			)
 		} else {
@@ -270,19 +274,21 @@ func (sctx *serveCtx) createMux(gwmux *gw.ServeMux, handler http.Handler) *http.
 		httpmux.Handle(path, h)
 	}
 
-	httpmux.Handle(
-		"/v3/",
-		wsproxy.WebsocketProxy(
-			gwmux,
-			wsproxy.WithRequestMutator(
-				// Default to the POST method for streams
-				func(incoming *http.Request, outgoing *http.Request) *http.Request {
-					outgoing.Method = "POST"
-					return outgoing
-				},
+	if gwmux != nil {
+		httpmux.Handle(
+			"/v3/",
+			wsproxy.WebsocketProxy(
+				gwmux,
+				wsproxy.WithRequestMutator(
+					// Default to the POST method for streams
+					func(_ *http.Request, outgoing *http.Request) *http.Request {
+						outgoing.Method = "POST"
+						return outgoing
+					},
+				),
 			),
-		),
-	)
+		)
+	}
 	if handler != nil {
 		httpmux.Handle("/", handler)
 	}
@@ -324,6 +330,17 @@ func (ac *accessController) ServeHTTP(rw http.ResponseWriter, req *http.Request)
 			// https://github.com/golang/go/commit/4b8a7eafef039af1834ef9bfa879257c4a72b7b5
 			http.Error(rw, errCVE20185702(host), 421)
 			return
+		}
+	} else if ac.s.Cfg.ClientCertAuthEnabled && ac.s.Cfg.EnableGRPCGateway &&
+		ac.s.AuthStore().IsAuthEnabled() && strings.HasPrefix(req.URL.Path, "/v3/") {
+		for _, chains := range req.TLS.VerifiedChains {
+			if len(chains) < 1 {
+				continue
+			}
+			if len(chains[0].Subject.CommonName) != 0 {
+				http.Error(rw, "CommonName of client sending a request against gateway will be ignored and not used as expected", 400)
+				return
+			}
 		}
 	}
 

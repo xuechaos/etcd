@@ -16,14 +16,16 @@ package clientv3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	v3rpc "go.etcd.io/etcd/etcdserver/api/v3rpc/rpctypes"
 	pb "go.etcd.io/etcd/etcdserver/etcdserverpb"
-	mvccpb "go.etcd.io/etcd/mvcc/mvccpb"
+	"go.etcd.io/etcd/mvcc/mvccpb"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -67,7 +69,7 @@ type Watcher interface {
 	// TODO: explicitly set context error in the last "WatchResponse" message and close channel?
 	// Currently, client contexts are overwritten with "valCtx" that never closes.
 	// TODO(v3.4): configure watch retry policy, limit maximum retry number
-	// (see https://go.etcd.io/etcd/issues/8980)
+	// (see https://github.com/etcd-io/etcd/issues/8980)
 	Watch(ctx context.Context, key string, opts ...OpOption) WatchChan
 
 	// RequestProgress requests a progress notify response be sent in all watch channels.
@@ -139,6 +141,7 @@ type watcher struct {
 
 	// streams holds all the active grpc streams keyed by ctx value.
 	streams map[string]*watchGrpcStream
+	lg      *zap.Logger
 }
 
 // watchGrpcStream tracks all watch resources attached to a single grpc stream.
@@ -241,6 +244,7 @@ func NewWatchFromWatchClient(wc pb.WatchClient, c *Client) Watcher {
 	}
 	if c != nil {
 		w.callOpts = c.callOpts
+		w.lg = c.lg
 	}
 	return w
 }
@@ -333,7 +337,7 @@ func (w *watcher) Watch(ctx context.Context, key string, opts ...OpOption) Watch
 	case <-wr.ctx.Done():
 	case <-donec:
 		if wgs.closeErr != nil {
-			closeCh <- WatchResponse{closeErr: wgs.closeErr}
+			closeCh <- WatchResponse{Canceled: true, closeErr: wgs.closeErr}
 			break
 		}
 		// retry; may have dropped stream from no ctxs
@@ -348,7 +352,7 @@ func (w *watcher) Watch(ctx context.Context, key string, opts ...OpOption) Watch
 		case <-ctx.Done():
 		case <-donec:
 			if wgs.closeErr != nil {
-				closeCh <- WatchResponse{closeErr: wgs.closeErr}
+				closeCh <- WatchResponse{Canceled: true, closeErr: wgs.closeErr}
 				break
 			}
 			// retry; may have dropped stream from no ctxs
@@ -370,6 +374,10 @@ func (w *watcher) Close() (err error) {
 			err = werr
 		}
 	}
+	// Consider context.Canceled as a successful close
+	if err == context.Canceled {
+		err = nil
+	}
 	return err
 }
 
@@ -379,6 +387,7 @@ func (w *watcher) RequestProgress(ctx context.Context) (err error) {
 
 	w.mu.Lock()
 	if w.streams == nil {
+		w.mu.Unlock()
 		return fmt.Errorf("no stream found for context")
 	}
 	wgs := w.streams[ctxKey]
@@ -396,10 +405,7 @@ func (w *watcher) RequestProgress(ctx context.Context) (err error) {
 	case reqc <- pr:
 		return nil
 	case <-ctx.Done():
-		if err == nil {
-			return ctx.Err()
-		}
-		return err
+		return ctx.Err()
 	case <-donec:
 		if wgs.closeErr != nil {
 			return wgs.closeErr
@@ -432,6 +438,7 @@ func (w *watcher) closeStream(wgs *watchGrpcStream) {
 func (w *watchGrpcStream) addSubstream(resp *pb.WatchResponse, ws *watcherStream) {
 	// check watch ID for backward compatibility (<= v3.3)
 	if resp.WatchId == -1 || (resp.Canceled && resp.CancelReason != "") {
+		w.closeErr = v3rpc.Error(errors.New(resp.CancelReason))
 		// failed; no channel
 		close(ws.recvc)
 		return
@@ -457,7 +464,7 @@ func (w *watchGrpcStream) closeSubstream(ws *watcherStream) {
 	}
 	// close subscriber's channel
 	if closeErr := w.closeErr; closeErr != nil && ws.initReq.ctx.Err() == nil {
-		go w.sendCloseSubstream(ws, &WatchResponse{closeErr: w.closeErr})
+		go w.sendCloseSubstream(ws, &WatchResponse{Canceled: true, closeErr: w.closeErr})
 	} else if ws.outc != nil {
 		close(ws.outc)
 	}
@@ -537,10 +544,14 @@ func (w *watchGrpcStream) run() {
 				w.resuming = append(w.resuming, ws)
 				if len(w.resuming) == 1 {
 					// head of resume queue, can register a new watcher
-					wc.Send(ws.initReq.toPB())
+					if err := wc.Send(ws.initReq.toPB()); err != nil {
+						lg.Warningf("error when sending request: %v", err)
+					}
 				}
 			case *progressRequest:
-				wc.Send(wreq.toPB())
+				if err := wc.Send(wreq.toPB()); err != nil {
+					lg.Warningf("error when sending request: %v", err)
+				}
 			}
 
 		// new events from the watch client
@@ -564,7 +575,9 @@ func (w *watchGrpcStream) run() {
 				}
 
 				if ws := w.nextResume(); ws != nil {
-					wc.Send(ws.initReq.toPB())
+					if err := wc.Send(ws.initReq.toPB()); err != nil {
+						lg.Warningf("error when sending request: %v", err)
+					}
 				}
 
 				// reset for next iteration
@@ -609,7 +622,9 @@ func (w *watchGrpcStream) run() {
 					},
 				}
 				req := &pb.WatchRequest{RequestUnion: cr}
-				wc.Send(req)
+				if err := wc.Send(req); err != nil {
+					lg.Warningf("error when sending request: %v", err)
+				}
 			}
 
 		// watch client failed on Recv; spawn another if possible
@@ -622,7 +637,9 @@ func (w *watchGrpcStream) run() {
 				return
 			}
 			if ws := w.nextResume(); ws != nil {
-				wc.Send(ws.initReq.toPB())
+				if err := wc.Send(ws.initReq.toPB()); err != nil {
+					lg.Warningf("error when sending request: %v", err)
+				}
 			}
 			cancelSet = make(map[int64]struct{})
 

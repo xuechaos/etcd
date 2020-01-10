@@ -3,23 +3,53 @@
 Previous change logs can be found at [CHANGELOG-3.0](https://github.com/etcd-io/etcd/blob/master/CHANGELOG-3.0.md).
 
 
+The minimum recommended etcd versions to run in **production** are 3.1.11+, 3.2.26+, and 3.3.11+.
 
-## [v3.1.20](https://github.com/coreos/etcd/releases/tag/v3.1.20) (2018-TBD)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.19...v3.1.20) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+<hr>
+
+## [v3.1.21](https://github.com/etcd-io/etcd/releases/tag/v3.1.21) (2019-TBD)
+
+### etcdctl v3
+
+- [Strip out insecure endpoints from DNS SRV records when using discovery](https://github.com/etcd-io/etcd/pull/10443) with etcdctl v2
+- Add [`etcdctl endpoint health --write-out` support](https://github.com/etcd-io/etcd/pull/9540).
+  - Previously, [`etcdctl endpoint health --write-out json` did not work](https://github.com/etcd-io/etcd/issues/9532).
+  - The command output is changed. Previously, if endpoint is unreachable, the command output is
+  "\<endpoint\> is unhealthy: failed to connect: \<error message\>". This change unified the error message, all error types
+  now have the same output "\<endpoint\> is unhealthy: failed to commit proposal: \<error message\>".
+
+### Metrics, Monitoring
+
+See [List of metrics](https://github.com/etcd-io/etcd/tree/master/Documentation/metrics) for all metrics per release.
+
+Note that any `etcd_debugging_*` metrics are experimental and subject to change.
+
+- Fix bug where [db_compaction_total_duration_milliseconds metric incorrectly measured duration as 0](https://github.com/etcd-io/etcd/pull/10646).
+
+<hr>
+
+## [v3.1.20](https://github.com/etcd-io/etcd/releases/tag/v3.1.20) (2018-10-10)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.19...v3.1.20) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Improved
 
 - Improve ["became inactive" warning log](https://github.com/etcd-io/etcd/pull/10024), which indicates message send to a peer failed.
 - Improve [read index wait timeout warning log](https://github.com/etcd-io/etcd/pull/10026), which indicates that local node might have slow network.
 - Add [gRPC interceptor for debugging logs](https://github.com/etcd-io/etcd/pull/9990); enable `etcd --debug` flag to see per-request debug information.
+- Add [consistency check in snapshot status](https://github.com/etcd-io/etcd/pull/10109). If consistency check on snapshot file fails, `snapshot status` returns `"snapshot file integrity check failed..."` error.
 
 ### Metrics, Monitoring
 
-See [List of metrics](https://etcd.readthedocs.io/en/latest/operate.html#v3-1) for all metrics per release.
+See [List of metrics](https://github.com/etcd-io/etcd/tree/master/Documentation/metrics) for all metrics per release.
 
 Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 
+- Improve [`etcd_network_peer_round_trip_time_seconds`](https://github.com/etcd-io/etcd/pull/10155) Prometheus metric to track leader heartbeats.
+  - Previously, it only samples the TCP connection for snapshot messages.
 - Display all registered [gRPC metrics at start](https://github.com/etcd-io/etcd/pull/10034).
 - Add [`etcd_snap_db_fsync_duration_seconds_count`](https://github.com/etcd-io/etcd/pull/9997) Prometheus metric.
 - Add [`etcd_snap_db_save_total_duration_seconds_bucket`](https://github.com/etcd-io/etcd/pull/9997) Prometheus metric.
@@ -30,12 +60,27 @@ Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 - Add [`etcd_network_snapshot_receive_failures`](https://github.com/etcd-io/etcd/pull/9997) Prometheus metric.
 - Add [`etcd_network_snapshot_receive_total_duration_seconds`](https://github.com/etcd-io/etcd/pull/9997) Prometheus metric.
 - Add [`etcd_server_id`](https://github.com/etcd-io/etcd/pull/9998) Prometheus metric.
+- Add [`etcd_server_health_success`](https://github.com/etcd-io/etcd/pull/10156) Prometheus metric.
+- Add [`etcd_server_health_failures`](https://github.com/etcd-io/etcd/pull/10156) Prometheus metric.
+- Add [`etcd_server_read_indexes_failed_total`](https://github.com/etcd-io/etcd/pull/10094) Prometheus metric.
+
+### client v3
+
+- Fix logic on [release lock key if cancelled](https://github.com/etcd-io/etcd/pull/10153) in `clientv3/concurrency` package.
+
+### Go
+
+- Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.19](https://github.com/coreos/etcd/releases/tag/v3.1.19) (2018-07-24)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.18...v3.1.19) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.19](https://github.com/etcd-io/etcd/releases/tag/v3.1.19) (2018-07-24)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.18...v3.1.19) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Improved
 
@@ -43,7 +88,7 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.18...v3.1.19) and
 
 ### Metrics, Monitoring
 
-See [List of metrics](https://etcd.readthedocs.io/en/latest/operate.html#v3-1) for all metrics per release.
+See [List of metrics](https://github.com/etcd-io/etcd/tree/master/Documentation/metrics) for all metrics per release.
 
 Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 
@@ -74,14 +119,18 @@ Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.18](https://github.com/coreos/etcd/releases/tag/v3.1.18) (2018-06-15)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.17...v3.1.18) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.18](https://github.com/etcd-io/etcd/releases/tag/v3.1.18) (2018-06-15)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.17...v3.1.18) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Metrics, Monitoring
 
-See [List of metrics](https://etcd.readthedocs.io/en/latest/operate.html#v3-1) for all metrics per release.
+See [List of metrics](https://github.com/etcd-io/etcd/tree/master/Documentation/metrics) for all metrics per release.
 
 Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 
@@ -93,10 +142,14 @@ Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.17](https://github.com/coreos/etcd/releases/tag/v3.1.17) (2018-06-06)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.16...v3.1.17) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.17](https://github.com/etcd-io/etcd/releases/tag/v3.1.17) (2018-06-06)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.16...v3.1.17) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -110,10 +163,14 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.16...v3.1.17) and
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.16](https://github.com/coreos/etcd/releases/tag/v3.1.16) (2018-05-31)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.15...v3.1.16) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.16](https://github.com/etcd-io/etcd/releases/tag/v3.1.16) (2018-05-31)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.15...v3.1.16) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -126,10 +183,14 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.15...v3.1.16) and
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.15](https://github.com/coreos/etcd/releases/tag/v3.1.15) (2018-05-09)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.14...v3.1.15) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.15](https://github.com/etcd-io/etcd/releases/tag/v3.1.15) (2018-05-09)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.14...v3.1.15) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -142,14 +203,18 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.14...v3.1.15) and
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.14](https://github.com/coreos/etcd/releases/tag/v3.1.14) (2018-04-24)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.13...v3.1.14) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.14](https://github.com/etcd-io/etcd/releases/tag/v3.1.14) (2018-04-24)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.13...v3.1.14) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Metrics, Monitoring
 
-See [List of metrics](https://etcd.readthedocs.io/en/latest/operate.html#v3-1) for all metrics per release.
+See [List of metrics](https://github.com/etcd-io/etcd/tree/master/Documentation/metrics) for all metrics per release.
 
 Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 
@@ -172,10 +237,14 @@ Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.13](https://github.com/coreos/etcd/releases/tag/v3.1.13) (2018-03-29)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.12...v3.1.13) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.13](https://github.com/etcd-io/etcd/releases/tag/v3.1.13) (2018-03-29)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.12...v3.1.13) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Improved
 
@@ -185,7 +254,7 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.12...v3.1.13) and
 
 ### Metrics, Monitoring
 
-See [List of metrics](https://etcd.readthedocs.io/en/latest/operate.html#v3-1) for all metrics per release.
+See [List of metrics](https://github.com/etcd-io/etcd/tree/master/Documentation/metrics) for all metrics per release.
 
 Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 
@@ -196,10 +265,14 @@ Note that any `etcd_debugging_*` metrics are experimental and subject to change.
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.12](https://github.com/coreos/etcd/releases/tag/v3.1.12) (2018-03-08)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.11...v3.1.12) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.12](https://github.com/etcd-io/etcd/releases/tag/v3.1.12) (2018-03-08)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.11...v3.1.12) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -215,10 +288,14 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.11...v3.1.12) and
 - Compile with [*Go 1.8.7*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.11](https://github.com/coreos/etcd/releases/tag/v3.1.11) (2017-11-28)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.10...v3.1.11) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.11](https://github.com/etcd-io/etcd/releases/tag/v3.1.11) (2017-11-28)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.10...v3.1.11) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -230,10 +307,14 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.10...v3.1.11) and
 - Compile with [*Go 1.8.5*](https://golang.org/doc/devel/release.html#go1.8).
 
 
+<hr>
 
-## [v3.1.10](https://github.com/coreos/etcd/releases/tag/v3.1.10) (2017-07-14)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.9...v3.1.10) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.10](https://github.com/etcd-io/etcd/releases/tag/v3.1.10) (2017-07-14)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.9...v3.1.10) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Added
 
@@ -246,10 +327,14 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.9...v3.1.10) and 
   - Fix panic on `net/http.CloseNotify`
 
 
+<hr>
 
-## [v3.1.9](https://github.com/coreos/etcd/releases/tag/v3.1.9) (2017-06-09)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.8...v3.1.9) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.9](https://github.com/etcd-io/etcd/releases/tag/v3.1.9) (2017-06-09)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.8...v3.1.9) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -260,30 +345,42 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.8...v3.1.9) and [
 - Compile with [*Go 1.7.6*](https://golang.org/doc/devel/release.html#go1.7).
 
 
-
-## [v3.1.8](https://github.com/coreos/etcd/releases/tag/v3.1.8) (2017-05-19)
-
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.7...v3.1.8) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
-
-### Go
-
-- Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
+<hr>
 
 
+## [v3.1.8](https://github.com/etcd-io/etcd/releases/tag/v3.1.8) (2017-05-19)
 
-## [v3.1.7](https://github.com/coreos/etcd/releases/tag/v3.1.7) (2017-04-28)
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.7...v3.1.8) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.6...v3.1.7) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Go
 
 - Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
 
 
+<hr>
 
-## [v3.1.6](https://github.com/coreos/etcd/releases/tag/v3.1.6) (2017-04-19)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.5...v3.1.6) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.7](https://github.com/etcd-io/etcd/releases/tag/v3.1.7) (2017-04-28)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.6...v3.1.7) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+
+### Go
+
+- Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
+
+
+<hr>
+
+
+## [v3.1.6](https://github.com/etcd-io/etcd/releases/tag/v3.1.6) (2017-04-19)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.5...v3.1.6) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -295,10 +392,14 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.5...v3.1.6) and [
 - Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
 
 
+<hr>
 
-## [v3.1.5](https://github.com/coreos/etcd/releases/tag/v3.1.5) (2017-03-27)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.4...v3.1.5) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.5](https://github.com/etcd-io/etcd/releases/tag/v3.1.5) (2017-03-27)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.4...v3.1.5) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd server
 
@@ -314,20 +415,28 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.4...v3.1.5) and [
 - Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
 
 
+<hr>
 
-## [v3.1.4](https://github.com/coreos/etcd/releases/tag/v3.1.4) (2017-03-22)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.3...v3.1.4) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.4](https://github.com/etcd-io/etcd/releases/tag/v3.1.4) (2017-03-22)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.3...v3.1.4) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Go
 
 - Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
 
 
+<hr>
 
-## [v3.1.3](https://github.com/coreos/etcd/releases/tag/v3.1.3) (2017-03-10)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.2...v3.1.3) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.3](https://github.com/etcd-io/etcd/releases/tag/v3.1.3) (2017-03-10)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.2...v3.1.3) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd gateway
 
@@ -347,10 +456,14 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.2...v3.1.3) and [
 - Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
 
 
+<hr>
 
-## [v3.1.2](https://github.com/coreos/etcd/releases/tag/v3.1.2) (2017-02-24)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.1...v3.1.2) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.2](https://github.com/etcd-io/etcd/releases/tag/v3.1.2) (2017-02-24)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.1...v3.1.2) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### etcd gateway
 
@@ -365,20 +478,28 @@ See [code changes](https://github.com/coreos/etcd/compare/v3.1.1...v3.1.2) and [
 - Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
 
 
+<hr>
 
-## [v3.1.1](https://github.com/coreos/etcd/releases/tag/v3.1.1) (2017-02-17)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.1.0...v3.1.1) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.1](https://github.com/etcd-io/etcd/releases/tag/v3.1.1) (2017-02-17)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.1.0...v3.1.1) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Go
 
 - Compile with [*Go 1.7.5*](https://golang.org/doc/devel/release.html#go1.7).
 
 
+<hr>
 
-## [v3.1.0](https://github.com/coreos/etcd/releases/tag/v3.1.0) (2017-01-20)
 
-See [code changes](https://github.com/coreos/etcd/compare/v3.0.0...v3.1.0) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes. **Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
+## [v3.1.0](https://github.com/etcd-io/etcd/releases/tag/v3.1.0) (2017-01-20)
+
+See [code changes](https://github.com/etcd-io/etcd/compare/v3.0.0...v3.1.0) and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md) for any breaking changes.
+
+**Again, before running upgrades from any previous release, please make sure to read change logs below and [v3.1 upgrade guide](https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrade_3_1.md).**
 
 ### Improved
 
@@ -451,4 +572,7 @@ See [security doc](https://github.com/etcd-io/etcd/blob/master/Documentation/op-
 ### Go
 
 - Compile with [*Go 1.7.4*](https://golang.org/doc/devel/release.html#go1.7).
+
+
+<hr>
 

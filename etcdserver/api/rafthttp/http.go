@@ -131,7 +131,7 @@ func (h *pipelineHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			plog.Errorf("failed to unmarshal raft message (%v)", err)
 		}
-		http.Error(w, "error unmarshaling raft message", http.StatusBadRequest)
+		http.Error(w, "error unmarshalling raft message", http.StatusBadRequest)
 		recvFailures.WithLabelValues(r.RemoteAddr).Inc()
 		return
 	}
@@ -257,6 +257,11 @@ func (h *snapshotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		snapshotReceiveFailures.WithLabelValues(from).Inc()
 		return
 	}
+
+	snapshotReceiveInflights.WithLabelValues(from).Inc()
+	defer func() {
+		snapshotReceiveInflights.WithLabelValues(from).Dec()
+	}()
 
 	if h.lg != nil {
 		h.lg.Info(
